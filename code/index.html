@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#163FA8">
+  <title>登录 - 创联职教云工作台</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page">
+    <!-- 顶部品牌区 -->
+    <header class="brand-band auth-hero">
+      <div class="auth-mark">
+        <span class="mark-badge">
+          <!-- lucide: graduation-cap -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>
+        </span>
+        <div>
+          <div class="mark-name">创联职教云工作台</div>
+          <div class="mark-en">Chuanlian Edu Cloud Workbench</div>
+        </div>
+      </div>
+      <h1>欢迎登录</h1>
+    </header>
+
+    <main>
+      <!-- 登录表单 -->
+      <section class="auth-card">
+        <h2>账号登录<small>使用后台管理系统下发的运营账号登录</small></h2>
+        <form id="loginForm" novalidate>
+          <div class="field" id="fieldUser">
+            <label class="field-label" for="username">登录账号<span class="req">*</span></label>
+            <div class="input-wrap">
+              <!-- lucide: user-round -->
+              <svg class="icon lead-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>
+              <input id="username" type="text" placeholder="请输入登录账号" autocomplete="username" maxlength="30">
+            </div>
+            <p class="field-error" id="userErr">请输入登录账号</p>
+          </div>
+
+          <div class="field" id="fieldPwd">
+            <label class="field-label" for="password">登录密码<span class="req">*</span></label>
+            <div class="input-wrap">
+              <!-- lucide: lock -->
+              <svg class="icon lead-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <input id="password" type="password" placeholder="请输入登录密码" autocomplete="current-password" maxlength="20">
+              <button type="button" class="eye-toggle" data-target="password" aria-label="显示或隐藏密码">
+                <svg class="icon eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="icon eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></svg>
+              </button>
+            </div>
+            <p class="field-error" id="pwdErr">请输入登录密码</p>
+          </div>
+
+          <div class="field" id="fieldCaptcha">
+            <label class="field-label" for="captchaInput">图形验证码<span class="req">*</span></label>
+            <div class="captcha-row">
+              <div class="input-wrap">
+                <!-- lucide: shield-check -->
+                <svg class="icon lead-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+                <input id="captchaInput" type="text" placeholder="不区分大小写" maxlength="4" autocapitalize="characters">
+              </div>
+              <button type="button" class="captcha-box" id="captchaBox" aria-label="点击刷新图形验证码">
+                <canvas id="captchaCanvas" width="118" height="48"></canvas>
+                <span class="captcha-tip">点击刷新</span>
+              </button>
+            </div>
+            <div class="captcha-meta">
+              <span>看不清？点击图片可刷新</span>
+              <span class="countdown" id="captchaCountdown"></span>
+            </div>
+            <p class="field-error" id="captchaErr">请输入图形验证码</p>
+          </div>
+
+          <button type="submit" class="btn-primary" id="loginSubmit">
+            <span class="spinner" id="loginSpinner" style="display:none"></span>
+            <span id="loginSubmitText">登 录</span>
+          </button>
+        </form>
+      </section>
+
+      <!-- 演示账号 -->
+      <div class="demo-note">
+        <b>演示账号</b><br>
+        运营管理员（全部模块权限）：<b>admin</b> / Admin@2026<br>
+        审核员（未配置模块权限）：<b>demo</b> / Demo@2026<br>
+        图形验证码：输入右侧图片中的 4 位字符即可<br>
+        修改过的密码会保存在本机，忘记密码？<a class="fill-link" id="resetDemo" href="javascript:void(0)">重置演示数据</a>（恢复初始账号密码与演示数据）
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="alert"></div>
+
+  <script src="mock.js"></script>
+  <script src="api.js"></script>
+  <script>
+  (function () {
+    'use strict';
+
+    var $ = function (id) { return document.getElementById(id); };
+
+    /* ---------- Toast ---------- */
+    var toastTimer = null;
+    function toast(msg, isError) {
+      var el = $('toast');
+      el.textContent = msg;
+      el.classList.toggle('toast-error', !!isError);
+      el.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { el.classList.remove('show'); }, 2400);
+    }
+
+    /* ---------- 会话守卫：已登录直接进入工作台 ---------- */
+    API.getSession().then(function (session) {
+      if (session) { location.replace('home.html'); return; }
+      // 会话失效/过期跳回时给出提示
+      if (sessionStorage.getItem(DB.EXPIRED_FLAG) === '1') {
+        sessionStorage.removeItem(DB.EXPIRED_FLAG);
+        toast('登录已失效，请重新登录', true);
+      }
+      refreshCaptcha();
+    });
+
+    /* ---------- 图形验证码：绘制 + 60s 有效期倒计时 ---------- */
+    var captchaLeft = 0;
+    var captchaTimer = null;
+
+    function refreshCaptcha() {
+      DB.genCaptcha($('captchaCanvas'));
+      $('captchaInput').value = '';
+      captchaLeft = 60;
+      $('captchaCountdown').classList.remove('is-expired');
+      renderCountdown();
+      clearInterval(captchaTimer);
+      captchaTimer = setInterval(function () {
+        captchaLeft -= 1;
+        renderCountdown();
+        if (captchaLeft <= 0) clearInterval(captchaTimer);
+      }, 1000);
+    }
+    function renderCountdown() {
+      var el = $('captchaCountdown');
+      if (captchaLeft > 0) {
+        el.textContent = captchaLeft + 's 内有效';
+      } else {
+        el.textContent = '已过期，请点击刷新';
+        el.classList.add('is-expired');
+      }
+    }
+    $('captchaBox').addEventListener('click', refreshCaptcha);
+
+    /* ---------- 密码显示 / 隐藏 ---------- */
+    var eyeBtn = document.querySelector('.eye-toggle');
+    eyeBtn.addEventListener('click', function () {
+      var input = $(eyeBtn.getAttribute('data-target'));
+      var show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      eyeBtn.querySelector('.eye-on').style.display = show ? 'none' : '';
+      eyeBtn.querySelector('.eye-off').style.display = show ? '' : 'none';
+    });
+
+    /* ---------- 表单校验与提交 ---------- */
+    function fieldError(fieldId, errId, msg) {
+      $(fieldId).classList.toggle('is-invalid', !!msg);
+      $(errId).textContent = msg || '';
+    }
+    // 输入时清除错误态
+    ['username', 'password', 'captchaInput'].forEach(function (id) {
+      $(id).addEventListener('input', function () {
+        this.closest('.field').classList.remove('is-invalid');
+      });
+    });
+
+    /* ---------- 重置演示数据：恢复初始账号密码与种子数据 ---------- */
+    $('resetDemo').addEventListener('click', function () {
+      var ok = confirm('确定重置演示数据？\n· 登录密码恢复为初始值：admin / Admin@2026\n· 机构、班级、应急、订单在本机的改动将一并还原');
+      if (!ok) return;
+      DB.resetMock();
+      location.reload();
+    });
+
+    var loginSubmitting = false;
+    $('loginForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (loginSubmitting) return; // 防重复提交
+
+      var username = $('username').value.trim();
+      var password = $('password').value;
+      var captcha = $('captchaInput').value.trim();
+
+      var ok = true;
+      if (!username) { fieldError('fieldUser', 'userErr', '请输入登录账号'); ok = false; } else fieldError('fieldUser', 'userErr', '');
+      if (!password) { fieldError('fieldPwd', 'pwdErr', '请输入登录密码'); ok = false; } else fieldError('fieldPwd', 'pwdErr', '');
+      if (!captcha) { fieldError('fieldCaptcha', 'captchaErr', '请输入图形验证码'); ok = false; } else fieldError('fieldCaptcha', 'captchaErr', '');
+      if (!ok) return;
+
+      loginSubmitting = true;
+      $('loginSubmit').disabled = true;
+      $('loginSpinner').style.display = '';
+      $('loginSubmitText').textContent = '登录中…';
+
+      API.login({ username: username, password: password, captcha: captcha }).then(function (res) {
+        if (res.code !== 0) {
+          toast(res.message || '账号、密码或验证码错误', true);
+          refreshCaptcha(); // 失败后刷新验证码，防止重放
+          $('captchaInput').focus();
+        } else {
+          toast('登录成功');
+          setTimeout(function () { location.replace('home.html'); }, 600);
+          return;
+        }
+        loginSubmitting = false;
+        $('loginSubmit').disabled = false;
+        $('loginSpinner').style.display = 'none';
+        $('loginSubmitText').textContent = '登 录';
+      });
+    });
+  })();
+  </script>
+</body>
+</html>

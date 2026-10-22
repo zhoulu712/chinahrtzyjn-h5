@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#163FA8">
+  <title>学员资料维护 - 创联职教云工作台</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page">
+    <!-- 模块页头 -->
+    <header class="brand-band app-header is-sub">
+      <button type="button" class="btn-back" id="backBtn" aria-label="返回检索列表">
+        <!-- lucide: chevron-left -->
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <div class="header-info">
+        <div class="header-title">学员资料维护</div>
+        <div class="header-sub">敏感信息仅限应急场景使用</div>
+      </div>
+      <span class="header-spacer"></span>
+    </header>
+
+    <main class="home-body module-body">
+      <!-- 详情主体（骨架 / 详情 / 错误态 由 JS 渲染） -->
+      <div id="detailBox"></div>
+    </main>
+  </div>
+
+  <!-- 字段编辑底部弹层（姓名 / 手机号 / 身份证号 共用） -->
+  <div class="sheet-mask" id="sheetMask"></div>
+  <div class="sheet" id="editSheet" role="dialog" aria-label="编辑学员资料">
+    <div class="grabber"></div>
+    <div class="sheet-head">
+      <h3 id="edTitle">修改资料</h3>
+      <button type="button" class="sheet-close" id="sheetClose" aria-label="关闭">
+        <!-- lucide: x -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+    <div class="ro-box">
+      <div class="ro-row"><span class="ro-label">学员姓名</span><span class="ro-value" id="edStuName">—</span></div>
+      <div class="ro-row"><span class="ro-label">身份证号</span><span class="ro-value mono-num" id="edStuIdcard">—</span></div>
+    </div>
+    <div class="time-field" id="edField">
+      <label class="tf-label" for="edInput" id="edLabel">修改内容<span class="req">*</span></label>
+      <div class="input-wrap">
+        <svg class="icon lead-icon" id="edLead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></svg>
+        <input type="text" id="edInput" autocomplete="off">
+      </div>
+      <p class="field-error" id="edError">输入不能为空</p>
+    </div>
+    <div class="time-hint" id="edHint">
+      <!-- lucide: info -->
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+      <span id="edHintText"></span>
+    </div>
+    <button type="button" class="btn-primary" id="btnSaveEdit">
+      <span class="spinner" id="edSpinner" style="display:none"></span>
+      <span id="edBtnText">保存修改</span>
+    </button>
+  </div>
+
+  <!-- 通用二次确认弹层（字段修改 / 删除照片 / 重置密码） -->
+  <div class="modal-mask" id="confirmMask"></div>
+  <div class="modal" id="confirmModal" role="alertdialog" aria-label="操作确认">
+    <div class="modal-icon brand" id="cfIcon"></div>
+    <h3 id="cfTitle">确认操作？</h3>
+    <p id="cfBody"></p>
+    <div class="modal-btns">
+      <button type="button" class="btn-ghost" id="cfCancel">取消</button>
+      <button type="button" class="btn-solid blue" id="cfOk">确认</button>
+    </div>
+  </div>
+
+  <!-- 实名认证照片大图查看器 -->
+  <div class="viewer-mask" id="viewerMask">
+    <div class="viewer-toolbar">
+      <button type="button" class="vt-btn" id="vtZoomOut" aria-label="缩小">
+        <!-- lucide: zoom-out -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/><line x1="8" x2="14" y1="11" y2="11"/></svg>
+      </button>
+      <span class="vt-label" id="vtLabel">100%</span>
+      <button type="button" class="vt-btn" id="vtZoomIn" aria-label="放大">
+        <!-- lucide: zoom-in -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/><line x1="11" x2="11" y1="8" y2="14"/><line x1="8" x2="14" y1="11" y2="11"/></svg>
+      </button>
+      <button type="button" class="vt-btn vt-close" id="viewerClose" aria-label="关闭查看器">
+        <!-- lucide: x -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+    <div class="viewer-stage" id="viewerStage">
+      <div class="doc-wrap" id="photoWrap"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="alert"></div>
+
+  <script src="mock.js"></script>
+  <script src="api.js"></script>
+  <script>
+  (function () {
+    'use strict';
+
+    var $ = function (id) { return document.getElementById(id); };
+
+    function getQueryParam(k) {
+      var m = new RegExp('[?&]' + k + '=([^&]*)').exec(location.search);
+      return m ? decodeURIComponent(m[1]) : '';
+    }
+    var STU_ID = getQueryParam('id');
+
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+
+    var ICONS = {
+      brand: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>',
+      danger: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>',
+      key: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.5-2.5a1 1 0 0 0 0-1.4l-3.04-3.04a1 1 0 0 0-1.41 0l-2.34 2.34a1 1 0 0 0 0 1.41l.59.59Z"/><path d="m18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>',
+      user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>',
+      phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
+      idcard: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>',
+      trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>',
+      image: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>',
+      alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>',
+      refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 21H3v-5"/></svg>'
+    };
+
+    /* ---------- Toast ---------- */
+    var toastTimer = null;
+    function toast(msg, isError) {
+      var el = $('toast');
+      el.textContent = msg;
+      el.classList.toggle('toast-error', !!isError);
+      el.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { el.classList.remove('show'); }, 2400);
+    }
+
+    /* ---------- 会话守卫 ---------- */
+    API.getSession().then(function (session) {
+      if (!session) {
+        sessionStorage.setItem(DB.EXPIRED_FLAG, '1');
+        location.replace('index.html');
+        return;
+      }
+      if (session.perms.indexOf('emergency') === -1 || !STU_ID) {
+        sessionStorage.setItem(DB.EXPIRED_FLAG, '1');
+        location.replace('home.html');
+        return;
+      }
+      loadStudent();
+    });
+    $('backBtn').addEventListener('click', function () { location.href = 'emergency.html'; });
+
+    /* ---------- 学员状态 ---------- */
+    var student = null; // { id, name, idcard, phone, photo }
+
+    function loadStudent() {
+      $('detailBox').innerHTML =
+        '<div class="detail-card"><div class="sk-line" style="width:32%"></div>'
+        + '<div class="sk-line" style="width:58%;margin-top:16px"></div>'
+        + '<div class="sk-line" style="width:46%;margin-top:14px"></div>'
+        + '<div class="sk-line" style="width:52%;margin-top:14px"></div></div>';
+      API.getStudent(STU_ID).then(function (res) {
+        if (res.code !== 0) {
+          renderLoadError(res.message);
+          return;
+        }
+        student = res.data;
+        renderDetail();
+      });
+    }
+
+    function renderLoadError(msg) {
+      $('detailBox').innerHTML =
+        '<div class="empty-state reveal">'
+        + '<div class="empty-icon">' + ICONS.alert + '</div>'
+        + '<h3>加载失败</h3>'
+        + '<p>' + esc(msg || '网络异常，请检查后重试') + '</p>'
+        + '<button type="button" class="btn-mini" id="retryBtn">' + ICONS.refresh + '重新加载</button>'
+        + '</div>';
+      $('retryBtn').addEventListener('click', loadStudent);
+    }
+
+    /* ---------- 身份证人像面 SVG（演示用离线绘制，替代真实照片资源） ---------- */
+    function buildIdPhotoSVG(s) {
+      var y = parseInt(s.idcard.slice(6, 10), 10);
+      var m = s.idcard.slice(10, 12);
+      var d = s.idcard.slice(12, 14);
+      var gender = parseInt(s.idcard.charAt(16), 10) % 2 === 1 ? '男' : '女';
+      function row(label, val, dy) {
+        return '<text x="150" y="' + dy + '" font-size="11" fill="#41566B">' + label
+          + '</text><text x="196" y="' + dy + '" font-size="11" fill="#1B2430" font-weight="600">' + val + '</text>';
+      }
+      return '<svg viewBox="0 0 340 214" xmlns="http://www.w3.org/2000/svg">'
+        + '<defs><linearGradient id="idbg" x1="0" y1="0" x2="1" y2="1">'
+        + '<stop offset="0" stop-color="#E3F1EC"/><stop offset="1" stop-color="#C9E4DB"/></linearGradient></defs>'
+        + '<rect width="340" height="214" rx="14" fill="url(#idbg)"/>'
+        + '<rect x="8" y="8" width="324" height="198" rx="10" fill="none" stroke="#9FC9BB" stroke-width="1"/>'
+        + '<text x="170" y="34" font-size="13" fill="#3D6B5C" text-anchor="middle" letter-spacing="3" font-weight="600">中华人民共和国居民身份证</text>'
+        + '<rect x="26" y="52" width="60" height="78" rx="4" fill="#F4FAF8" stroke="#9FC9BB"/>'
+        + '<circle cx="56" cy="78" r="14" fill="#B7D6CA"/>'
+        + '<path d="M32 122c2-14 12-20 24-20s22 6 24 20z" fill="#B7D6CA"/>'
+        + row('姓名', esc(s.name), 66)
+        + row('性别', gender, 88)
+        + row('出生', y + '年' + m + '月' + d + '日', 110)
+        + '<text x="150" y="132" font-size="11" fill="#41566B">住址</text>'
+        + '<text x="196" y="132" font-size="10" fill="#8A93A3">──────────</text>'
+        + '<text x="170" y="172" font-size="15" fill="#1B2430" font-family="DIN Alternate, monospace" letter-spacing="2" text-anchor="middle" font-weight="600">' + esc(s.idcard) + '</text>'
+        + '<text x="316" y="200" font-size="9" fill="#7BA998" text-anchor="end">演示样证 · 非真实证件</text>'
+        + '</svg>';
+    }
+
+    /* ---------- 详情渲染 ---------- */
+    function renderDetail() {
+      var photoBlock = student.photo
+        ? '<div class="photo-card" id="photoCard">'
+          + '<div class="photo-thumb">' + buildIdPhotoSVG(student) + '</div>'
+          + '<div class="photo-info"><b>实名认证照片</b><span>点击查看大图，可缩放核对信息</span></div>'
+          + '<button type="button" class="photo-del" data-action="del-photo" aria-label="删除实名认证照片">' + ICONS.trash + '</button>'
+          + '<span class="photo-view-tag">' + ICONS.image.replace('<svg', '<svg class="icon"') + '</span>'
+          + '</div>'
+        : '<div class="photo-empty reveal">'
+          + '<div class="photo-empty-icon">' + ICONS.image + '</div>'
+          + '<div><b>暂无实名认证照片</b></div>'
+          + '</div>';
+
+      // 操作内联到对应字段右侧：姓名/身份证号/手机号行内修改，手机号行附带重置密码，照片卡片内删除
+      $('detailBox').innerHTML =
+        '<section class="detail-card reveal">'
+        + kvRow('学员姓名', esc(student.name), false, act('edit-name', '修改'))
+        + kvRow('学员身份证号', esc(student.idcard), true, act('edit-idcard', '修改'))
+        + kvRow('学员手机号', esc(student.phone), true, act('edit-phone', '修改') + act('reset-pwd', '重置密码'))
+        + '</section>'
+        + '<p class="sec-label">实名认证照片</p>'
+        + photoBlock;
+
+      if (student.photo) $('photoCard').addEventListener('click', function (e) {
+        if (e.target.closest('.photo-del')) return; // 删除按钮单独处理，不打开查看器
+        openViewer();
+      });
+    }
+
+    function kvRow(label, value, mono, actions) {
+      return '<div class="kv-row"><span class="kv-label">' + label + '</span>'
+        + '<span class="kv-value' + (mono ? ' mono-num' : '') + '">' + value + '</span>'
+        + '<span class="kv-acts">' + actions + '</span>'
+        + '</div>';
+    }
+
+    function act(action, label) {
+      return '<button type="button" class="kv-act" data-action="' + action + '">' + label + '</button>';
+    }
+
+    /* ---------- 操作分发（事件委托：字段行内联按钮 / 照片删除按钮） ---------- */
+    $('detailBox').addEventListener('click', function (e) {
+      var btn = e.target.closest ? e.target.closest('[data-action]') : null;
+      if (!btn) return;
+      var action = btn.getAttribute('data-action');
+      if (action === 'edit-name') openEditSheet('name');
+      else if (action === 'edit-phone') openEditSheet('phone');
+      else if (action === 'edit-idcard') openEditSheet('idcard');
+      else if (action === 'del-photo') askDeletePhoto();
+      else if (action === 'reset-pwd') askResetPwd();
+    });
+
+    /* ---------- 通用二次确认弹层 ---------- */
+    var pendingOnOk = null;
+    function showConfirm(opts) {
+      // opts: { danger, icon, title, body, okText, onOk }
+      $('cfIcon').className = 'modal-icon ' + (opts.danger ? 'danger' : 'brand');
+      $('cfIcon').innerHTML = opts.icon || ICONS.brand;
+      $('cfTitle').textContent = opts.title;
+      $('cfBody').innerHTML = opts.body;
+      $('cfOk').className = 'btn-solid' + (opts.danger ? '' : ' blue');
+      $('cfOk').textContent = opts.okText || '确认';
+      pendingOnOk = opts.onOk || null;
+      $('confirmMask').classList.add('show');
+      $('confirmModal').classList.add('show');
+    }
+    function closeConfirm() {
+      $('confirmMask').classList.remove('show');
+      $('confirmModal').classList.remove('show');
+      pendingOnOk = null;
+    }
+    $('cfCancel').addEventListener('click', closeConfirm);
+    $('confirmMask').addEventListener('click', closeConfirm);
+    $('cfOk').addEventListener('click', function () {
+      if (!pendingOnOk) return;
+      var fn = pendingOnOk;
+      pendingOnOk = null; // 先摘除，防止重复触发
+      closeConfirm();
+      fn();
+    });
+
+    /* ---------- 字段编辑弹层（姓名 / 手机号 / 身份证号 共用） ---------- */
+    var EDIT_META = {
+      name: {
+        title: '修改学员姓名', label: '新姓名', icon: ICONS.user, inputmode: 'text', maxlength: 20,
+        hint: '请输入学员身份证上的姓名。'
+      },
+      phone: {
+        title: '修改学员手机号', label: '新手机号', icon: ICONS.phone, inputmode: 'numeric', maxlength: 11,
+        hint: '须为中国大陆 11 位手机号，保存前将校验格式并校验系统内唯一性。'
+      },
+      idcard: {
+        title: '修改学员身份证号', label: '新身份证号', icon: ICONS.idcard, inputmode: 'text', maxlength: 18,
+        hint: '须为 18 位身份证号，保存前将校验基础格式、校验位与系统内唯一性。'
+      }
+    };
+    var editType = null;
+    var saving = false;
+
+    function openEditSheet(type) {
+      editType = type;
+      var meta = EDIT_META[type];
+      saving = false;
+      $('edTitle').textContent = meta.title;
+      $('edStuName').textContent = student.name;
+      $('edStuIdcard').textContent = student.idcard;
+      $('edLabel').innerHTML = meta.label + '<span class="req">*</span>';
+      $('edLead').outerHTML = meta.icon.replace('<svg', '<svg class="icon lead-icon" id="edLead"');
+      $('edInput').value = student[type === 'name' ? 'name' : type === 'phone' ? 'phone' : 'idcard'];
+      $('edInput').setAttribute('inputmode', meta.inputmode);
+      $('edInput').setAttribute('maxlength', meta.maxlength);
+      $('edInput').style.textTransform = type === 'idcard' ? 'uppercase' : 'none';
+      $('edHintText').textContent = meta.hint;
+      $('edField').classList.remove('is-invalid');
+      $('edSpinner').style.display = 'none';
+      $('edBtnText').textContent = '保存修改';
+      $('btnSaveEdit').disabled = false;
+      $('sheetMask').classList.add('show');
+      $('editSheet').classList.add('show');
+      setTimeout(function () { $('edInput').focus(); }, 260);
+    }
+
+    function closeSheet() {
+      if (saving) return; // 保存中不允许关闭
+      $('sheetMask').classList.remove('show');
+      $('editSheet').classList.remove('show');
+      editType = null;
+    }
+    $('sheetClose').addEventListener('click', closeSheet);
+    $('sheetMask').addEventListener('click', closeSheet);
+    $('edInput').addEventListener('input', function () { $('edField').classList.remove('is-invalid'); });
+
+    // 身份证校验位（与 api.js 同口径的前端预校验）
+    function idcardValid(n) {
+      if (!/^\d{17}[\dX]$/.test(n)) return false;
+      var W = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2];
+      var M = '10X98765432';
+      var sum = 0;
+      for (var i = 0; i < 17; i++) sum += parseInt(n.charAt(i), 10) * W[i];
+      return M[sum % 11] === n.charAt(17).toUpperCase();
+    }
+
+    function setEdError(msg) {
+      $('edError').textContent = msg;
+      $('edField').classList.add('is-invalid');
+    }
+
+    $('btnSaveEdit').addEventListener('click', function () {
+      if (saving || !editType) return;
+      var val = $('edInput').value.trim();
+      var cur = editType === 'name' ? student.name : editType === 'phone' ? student.phone : student.idcard;
+      $('edField').classList.remove('is-invalid');
+      if (!val) { setEdError('输入不能为空'); return; }
+      if (editType === 'name' && !/^[\u4e00-\u9fa5A-Za-z·]{2,20}$/.test(val)) { setEdError('姓名须为 2-20 位中文、字母或间隔号'); return; }
+      if (editType === 'phone' && !/^1[3-9]\d{9}$/.test(val)) { setEdError('手机号须为中国大陆 11 位号码'); return; }
+      if (editType === 'idcard') {
+        val = val.toUpperCase();
+        if (!idcardValid(val)) { setEdError('身份证号格式或校验位不正确'); return; }
+      }
+      if (val === cur) { setEdError('内容未发生变化，请修改后再保存'); return; }
+
+      var body;
+      if (editType === 'name') {
+        body = '学员「' + esc(student.name) + '」的姓名将修改为<br><b>' + esc(val) + '</b>';
+      } else {
+        body = '原' + (editType === 'phone' ? '手机号' : '身份证号') + '：<span class="mono">' + esc(cur || '未绑定') + '</span><br>'
+          + '新' + (editType === 'phone' ? '手机号' : '身份证号') + '：<span class="mono">' + esc(val) + '</span>';
+      }
+      showConfirm({
+        icon: ICONS.brand,
+        title: '确认' + EDIT_META[editType].title.replace('学员', '') + '？',
+        body: body,
+        okText: '确认修改',
+        onOk: function () { submitEdit(val); }
+      });
+    });
+
+    function submitEdit(val) {
+      saving = true;
+      $('edSpinner').style.display = '';
+      $('edBtnText').textContent = '保存中…';
+      $('btnSaveEdit').disabled = true;
+      var req;
+      if (editType === 'name') req = API.updateStudentName(student.id, { name: val });
+      else if (editType === 'phone') req = API.updateStudentPhone(student.id, { phone: val });
+      else req = API.updateStudentIdcard(student.id, { idcard: val });
+      // TODO: replace with fetch('POST /api/students/:id/update-*')
+      req.then(function (res) {
+        saving = false;
+        $('edSpinner').style.display = 'none';
+        $('edBtnText').textContent = '保存修改';
+        $('btnSaveEdit').disabled = false;
+        if (res.code !== 0) {
+          toast(res.message || '保存失败，请稍后重试', true);
+          return;
+        }
+        if (editType === 'name') student.name = val;
+        else if (editType === 'phone') student.phone = val;
+        else student.idcard = val;
+        var ok = editType;
+        editType = null;
+        $('sheetMask').classList.remove('show');
+        $('editSheet').classList.remove('show');
+        renderDetail();
+        toast(ok === 'name' ? '学员姓名已更新' : ok === 'phone' ? '学员手机号已更新' : '学员身份证号已更新');
+      });
+    }
+
+    /* ---------- 删除实名认证照片 ---------- */
+    function askDeletePhoto() {
+      showConfirm({
+        danger: true,
+        icon: ICONS.danger,
+        title: '删除实名认证照片？',
+        body: '删除后照片将从系统中移除，请谨慎操作。',
+        okText: '确认删除',
+        onOk: function () {
+          // TODO: replace with fetch('DELETE /api/students/:id/photo')
+          API.deleteStudentPhoto(student.id).then(function (res) {
+            if (res.code !== 0) { toast(res.message || '删除失败，请稍后重试', true); return; }
+            student.photo = false;
+            renderDetail();
+            toast('实名认证照片已删除');
+          });
+        }
+      });
+    }
+
+    /* ---------- 重置登录密码 ---------- */
+    function askResetPwd() {
+      var tail = student.phone.slice(-6);
+      showConfirm({
+        icon: ICONS.key,
+        title: '重置登录密码？',
+        body: '确认将该学员的登录密码重置为当前手机号后六位 <b class="mono">' + esc(tail) + '</b>？重置后请通知学员及时修改密码。',
+        okText: '确认重置',
+        onOk: function () {
+          // TODO: replace with fetch('POST /api/students/:id/reset-password')
+          API.resetStudentPassword(student.id).then(function (res) {
+            if (res.code !== 0) { toast(res.message || '重置失败，请稍后重试', true); return; }
+            toast('密码已重置为 ' + res.data.password);
+          });
+        }
+      });
+    }
+
+    /* ---------- 实名照片大图查看器（100%~300% 缩放） ---------- */
+    var scale = 1;
+    function openViewer() {
+      scale = 1;
+      syncViewer();
+      $('photoWrap').innerHTML = buildIdPhotoSVG(student);
+      $('viewerMask').classList.add('show');
+    }
+    function closeViewer() { $('viewerMask').classList.remove('show'); }
+    function syncViewer() {
+      $('photoWrap').style.transform = 'scale(' + scale + ')';
+      $('vtLabel').textContent = Math.round(scale * 100) + '%';
+      $('vtZoomIn').disabled = scale >= 3;
+      $('vtZoomOut').disabled = scale <= 1;
+    }
+    $('vtZoomIn').addEventListener('click', function () { scale = Math.min(3, +(scale + 0.5).toFixed(1)); syncViewer(); });
+    $('vtZoomOut').addEventListener('click', function () { scale = Math.max(1, +(scale - 0.5).toFixed(1)); syncViewer(); });
+    $('viewerClose').addEventListener('click', closeViewer);
+    $('viewerMask').addEventListener('click', function (e) {
+      if (e.target === this || e.target === $('viewerStage')) closeViewer();
+    });
+  })();
+  </script>
+</body>
+</html>

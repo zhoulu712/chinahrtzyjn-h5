@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#163FA8">
+  <title>工作台首页 - 创联职教云工作台</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page">
+    <!-- 顶部品牌带 + 账号区（左上角入口：侧滑操作菜单） -->
+    <header class="brand-band app-header">
+      <button type="button" class="btn-menu" id="menuBtn" aria-label="打开操作菜单">
+        <!-- lucide: menu -->
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+      </button>
+      <div class="avatar" id="avatar">--</div>
+      <div class="header-info">
+        <div class="greet" id="greet">你好</div>
+        <div class="name-row">
+          <span id="displayName">加载中</span>
+          <span class="chip" id="roleChip">—</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="home-body">
+      <!-- 个人信息（默认选中视图） -->
+      <section id="profileView">
+        <!-- 悬浮账号卡：账号来自登录态，H5 内不可修改 -->
+        <section class="account-card reveal">
+          <div class="card-label">
+            <!-- lucide: user-round -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>
+            当前登录账号
+          </div>
+          <div class="account-name" id="accountName">—</div>
+          <div class="account-sub">如需调整请联系系统管理员在后台配置</div>
+        </section>
+
+        <!-- 功能权限：来自后台菜单配置，仅展示 -->
+        <section>
+          <h2 class="section-title">功能权限</h2>
+          <div class="perm-card reveal" id="permCard"></div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+    <!-- 侧滑操作菜单（参考抽屉式导航：分组圆角卡片 + 行内图标菜单） -->
+    <div class="dmenu-mask" id="dmenuMask"></div>
+    <nav class="dmenu-panel" id="dmenuPanel" aria-label="操作菜单">
+      <div class="dm-head">
+        <div class="avatar dm-avatar" id="dmAvatar">--</div>
+        <div class="dm-head-info">
+          <b id="dmName">—</b>
+          <span id="dmRole">—</span>
+        </div>
+      </div>
+
+      <!-- 账号相关 -->
+      <div class="dm-card">
+        <button type="button" class="dm-item is-active" data-menu="profile">
+          <span class="dm-ico" data-ico="user-round"></span>
+          <span class="dm-label">个人信息</span>
+          <span class="dm-side" data-ico="chev"></span>
+        </button>
+        <button type="button" class="dm-item" data-menu="pwd">
+          <span class="dm-ico" data-ico="key-round"></span>
+          <span class="dm-label">修改登录密码</span>
+          <span class="dm-side" data-ico="chev"></span>
+        </button>
+      </div>
+
+      <!-- 业务模块：按后台菜单权限渲染（JS 填充） -->
+      <div class="dm-card" id="dmModules"></div>
+
+      <!-- 底部工具行 -->
+      <div class="dm-foot">
+        <button type="button" class="dm-circle" id="dmLogout" aria-label="退出登录">
+          <!-- lucide: log-out -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+        </button>
+        <span>退出登录</span>
+      </div>
+    </nav>
+
+    <!-- 退出登录二次确认 -->
+    <div class="modal-mask" id="logoutMask"></div>
+    <div class="modal" id="logoutModal" role="dialog" aria-modal="true">
+      <div class="modal-icon danger">
+        <!-- lucide: log-out -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+      </div>
+      <h3>确认退出登录？</h3>
+      <p>退出后将清除本地登录会话，再次使用需重新登录。</p>
+      <div class="modal-btns">
+        <button type="button" class="btn-ghost" id="logoutCancel">取消</button>
+        <button type="button" class="btn-solid" id="logoutConfirm">
+          <span class="spinner" id="logoutSpinner" style="display:none"></span>
+          <span id="logoutConfirmText">退出登录</span>
+        </button>
+      </div>
+    </div>
+
+    <script src="mock.js"></script>
+    <script src="api.js"></script>
+    <script>
+    (function () {
+      'use strict';
+
+      var $ = function (id) { return document.getElementById(id); };
+
+      /* ---------- 菜单图标（Lucide 内联 SVG，key 与 DB.modules.icon 一致） ---------- */
+      var ICONS = {
+        'user-round': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>',
+        'key-round': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/></svg>',
+        'chev': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>',
+        'building-2': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>',
+        'graduation-cap': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>',
+        'siren': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18v-6a5 5 0 1 1 10 0v6"/><path d="M5 21a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2Z"/><path d="M21 12h1"/><path d="M18.5 4.5 18 5"/><path d="M2 12h1"/><path d="M12 2v1"/><path d="M4.929 4.929l.707.707"/><path d="M12 12v6"/></svg>',
+        'monitor-play': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 7.75a.75.75 0 0 1 1.142-.638l3.664 2.249a.75.75 0 0 1 0 1.278l-3.664 2.25a.75.75 0 0 1-1.142-.64z"/><path d="M12 17v4"/><path d="M8 21h8"/><rect x="2" y="3" width="20" height="14" rx="2"/></svg>',
+        'check': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>'
+      };
+
+      /* 填充静态图标占位（data-ico） */
+      Array.prototype.forEach.call(document.querySelectorAll('[data-ico]'), function (el) {
+        el.innerHTML = ICONS[el.getAttribute('data-ico')] || '';
+      });
+
+      /* ---------- 会话守卫：失效/过期 → 回登录页 ---------- */
+      var selected = 'profile'; // 默认选中「个人信息」
+      // 业务模块与修改登录密码 → 独立页面
+      var NAV = { org: 'org.html', klass: 'klass.html', emergency: 'emergency.html', order: 'order.html', pwd: 'change-password.html' };
+
+      API.getSession().then(function (session) {
+        if (!session) {
+          sessionStorage.setItem(DB.EXPIRED_FLAG, '1');
+          location.replace('index.html');
+          return;
+        }
+        render(session);
+      });
+
+      function render(session) {
+        // 顶部账号区 + 抽屉头部
+        var initial = (session.name || session.username).charAt(0);
+        var h = new Date().getHours();
+        $('avatar').textContent = initial;
+        $('dmAvatar').textContent = initial;
+        $('displayName').textContent = session.name;
+        $('dmName').textContent = session.name;
+        $('roleChip').textContent = session.role;
+        $('dmRole').textContent = session.role;
+        $('greet').textContent = h < 6 ? '夜深了' : h < 9 ? '早上好' : h < 12 ? '上午好' : h < 14 ? '中午好' : h < 18 ? '下午好' : '晚上好';
+        // 账号卡（PRD：顶部展示"当前登录账号：{账号}"，账号不可在 H5 内修改）
+        $('accountName').textContent = session.username;
+
+        // 按菜单权限渲染业务模块菜单；无权限 → 抽屉内提示行
+        var perms = session.perms || [];
+        var allowed = DB.modules.filter(function (m) { return perms.indexOf(m.key) !== -1; });
+        var box = $('dmModules');
+        if (!allowed.length) {
+          box.innerHTML = '<div class="dm-empty">当前账号未配置业务模块权限，请联系系统管理员在后台完成配置。</div>';
+        } else {
+          box.innerHTML = allowed.map(function (m) {
+            return '<button type="button" class="dm-item" data-menu="' + m.key + '">'
+              + '<span class="dm-ico">' + ICONS[m.icon] + '</span>'
+              + '<span class="dm-label">' + m.label + '</span>'
+              + '<span class="dm-side">' + ICONS.chev + '</span>'
+              + '</button>';
+          }).join('');
+        }
+        renderPerms(perms);
+        renderView();
+      }
+
+      /* 功能权限卡：仅展示当前账号已开通的模块 */
+      function renderPerms(perms) {
+        var card = $('permCard');
+        var allowed = DB.modules.filter(function (m) { return perms.indexOf(m.key) !== -1; });
+        card.innerHTML = allowed.length
+          ? allowed.map(function (m) {
+              return '<span class="perm-chip">' + ICONS.check + m.label + '</span>';
+            }).join('')
+          : '<p class="perm-empty">当前账号未配置业务模块权限，仅可查看个人信息与修改登录密码。</p>';
+      }
+
+      /* 内容区：首页仅个人信息视图，抽屉内高亮当前选中项 */
+      function renderView() {
+        Array.prototype.forEach.call(document.querySelectorAll('.dm-item[data-menu]'), function (item) {
+          item.classList.toggle('is-active', item.getAttribute('data-menu') === selected);
+        });
+      }
+
+      /* ---------- 抽屉开关 ---------- */
+      function openDrawer() {
+        $('dmenuMask').classList.add('show');
+        $('dmenuPanel').classList.add('show');
+      }
+      function closeDrawer() {
+        $('dmenuMask').classList.remove('show');
+        $('dmenuPanel').classList.remove('show');
+      }
+      $('menuBtn').addEventListener('click', openDrawer);
+      $('dmenuMask').addEventListener('click', closeDrawer);
+
+      /* ---------- 菜单分发（事件委托） ---------- */
+      $('dmenuPanel').addEventListener('click', function (e) {
+        if (e.target.closest('#dmLogout')) { closeDrawer(); openLogout(); return; }
+        var item = e.target.closest ? e.target.closest('.dm-item') : null;
+        if (!item) return;
+        var key = item.getAttribute('data-menu');
+        if (NAV[key]) { location.href = NAV[key]; return; } // 业务模块 / 修改登录密码 → 独立页面
+        closeDrawer();
+        selected = key; // 个人信息
+        renderView();
+      });
+
+      /* ---------- 退出登录（二次确认 → 清除本地会话 → 回登录页） ---------- */
+      var loggingOut = false;
+      function openLogout() {
+        $('logoutMask').classList.add('show');
+        $('logoutModal').classList.add('show');
+      }
+      function closeLogout() {
+        $('logoutMask').classList.remove('show');
+        $('logoutModal').classList.remove('show');
+      }
+      $('logoutCancel').addEventListener('click', closeLogout);
+      $('logoutMask').addEventListener('click', closeLogout);
+      $('logoutConfirm').addEventListener('click', function () {
+        if (loggingOut) return; // 防重复提交
+        loggingOut = true;
+        $('logoutConfirm').disabled = true;
+        $('logoutSpinner').style.display = '';
+        $('logoutConfirmText').textContent = '退出中…';
+        API.logout().then(function () {
+          sessionStorage.setItem(DB.EXPIRED_FLAG, '0'); // 主动退出不提示"登录已失效"
+          location.replace('index.html');
+        });
+      });
+    })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#163FA8">
+  <title>视频课订单管理 - 创联职教云工作台</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page">
+    <!-- 模块页头（与首页同壳：渐变品牌带，返回 + 标题） -->
+    <header class="brand-band app-header is-sub">
+      <button type="button" class="btn-back" id="backBtn" aria-label="返回工作台">
+        <!-- lucide: chevron-left -->
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <div class="header-info">
+        <div class="header-title">视频课订单管理</div>
+        <div class="header-sub">订单审核与付款方式留存</div>
+      </div>
+      <span class="header-spacer"></span>
+    </header>
+
+    <main class="home-body module-body">
+      <!-- 页签：默认进入待审核订单 -->
+      <div class="org-tabs-card">
+        <div class="org-tabs" role="tablist">
+          <button type="button" class="tab-item active" data-tab="pending" role="tab">
+            待审核订单<span class="tab-badge" id="pendingBadge">-</span>
+          </button>
+          <button type="button" class="tab-item" data-tab="all" role="tab">
+            全部订单
+          </button>
+        </div>
+      </div>
+
+      <!-- 下拉刷新指示条 -->
+      <div class="ptr-bar" id="ptrBar">
+        <!-- lucide: arrow-down -->
+        <svg class="ptr-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
+        <span class="spinner mini" id="ptrSpinner" style="display:none"></span>
+        <span id="ptrText">下拉刷新</span>
+      </div>
+
+      <!-- 订单列表（骨架 / 列表 / 空态 / 错误态 由 JS 渲染） -->
+      <div id="listBox"></div>
+      <div id="footState"></div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="alert"></div>
+
+  <script src="mock.js"></script>
+  <script src="api.js"></script>
+  <script>
+  (function () {
+    'use strict';
+
+    var $ = function (id) { return document.getElementById(id); };
+
+    var PAGE_SIZE = 6;
+    var LS_KEY = 'eduops.order.liststate';
+
+    var ICONS = {
+      clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+      users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+      receipt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></svg>',
+      landmark: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>',
+      inbox: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>',
+      alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>',
+      refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 21H3v-5"/></svg>'
+    };
+
+    var STATUS_META = {
+      pending: { text: '待审核', cls: 'tag-pending' },
+      approved: { text: '已通过', cls: 'tag-approved' },
+      rejected: { text: '不通过', cls: 'tag-rejected' }
+    };
+
+    var state = {
+      tab: 'pending',
+      page: 1,
+      list: [],
+      total: 0,
+      hasMore: false,
+      firstLoaded: false,
+      loading: false,       // 首屏/刷新中
+      loadingMore: false,   // 触底加载中
+      failed: false
+    };
+
+    /* ---------- Toast ---------- */
+    var toastTimer = null;
+    function toast(msg, isError) {
+      var el = $('toast');
+      el.textContent = msg;
+      el.classList.toggle('toast-error', !!isError);
+      el.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { el.classList.remove('show'); }, 2400);
+    }
+
+    /* ---------- 会话守卫：失效/过期 → 回登录页 ---------- */
+    API.getSession().then(function (session) {
+      if (!session) {
+        sessionStorage.setItem(DB.EXPIRED_FLAG, '1');
+        location.replace('index.html');
+        return;
+      }
+      if (session.perms.indexOf('order') === -1) {
+        // 无该模块菜单权限，不允许进入
+        sessionStorage.setItem(DB.EXPIRED_FLAG, '1');
+        location.replace('home.html');
+        return;
+      }
+      restoreState();
+      reload(true);
+    });
+    $('backBtn').addEventListener('click', function () { location.href = 'home.html'; });
+
+    /* ---------- 列表状态持久化（详情页返回后还原页签） ---------- */
+    function saveState() {
+      try { sessionStorage.setItem(LS_KEY, JSON.stringify({ tab: state.tab })); } catch (e) {}
+    }
+    function restoreState() {
+      try {
+        var raw = sessionStorage.getItem(LS_KEY);
+        if (!raw) return;
+        var s = JSON.parse(raw);
+        if (s && (s.tab === 'pending' || s.tab === 'all')) {
+          state.tab = s.tab;
+          syncTabUI();
+        }
+        sessionStorage.removeItem(LS_KEY);
+      } catch (e) {}
+    }
+
+    /* ---------- 页签切换 ---------- */
+    function syncTabUI() {
+      Array.prototype.forEach.call(document.querySelectorAll('.tab-item'), function (btn) {
+        btn.classList.toggle('active', btn.getAttribute('data-tab') === state.tab);
+      });
+    }
+    Array.prototype.forEach.call(document.querySelectorAll('.tab-item'), function (btn) {
+      btn.addEventListener('click', function () {
+        var tab = btn.getAttribute('data-tab');
+        if (tab === state.tab) return;
+        state.tab = tab;
+        syncTabUI();
+        reload(true);
+      });
+    });
+
+    /* ---------- 数据加载 ---------- */
+    function reload(showSkeleton) {
+      state.page = 1;
+      state.loading = true;
+      state.failed = false;
+      if (showSkeleton) renderSkeleton();
+      setFoot('');
+      API.fetchOrders({ tab: state.tab, page: 1, pageSize: PAGE_SIZE })
+        .then(function (res) {
+          state.loading = false;
+          if (res.code !== 0) {
+            state.failed = true;
+            renderError(res.message);
+            return;
+          }
+          state.list = res.data.list;
+          state.total = res.data.total;
+          state.hasMore = res.data.hasMore;
+          state.firstLoaded = true;
+          $('pendingBadge').textContent = res.data.counts.pending;
+          renderList();
+        });
+    }
+
+    function loadMore() {
+      if (state.loadingMore || state.loading || state.failed || !state.hasMore) return;
+      state.loadingMore = true;
+      setFoot('<span class="spinner mini"></span>加载中…');
+      API.fetchOrders({ tab: state.tab, page: state.page + 1, pageSize: PAGE_SIZE })
+        .then(function (res) {
+          state.loadingMore = false;
+          if (res.code !== 0) {
+            setFoot('加载失败，<button type="button" class="fill-link" id="retryMore">重试</button>');
+            var r = $('retryMore');
+            if (r) r.addEventListener('click', loadMore);
+            return;
+          }
+          state.page += 1;
+          state.list = state.list.concat(res.data.list);
+          state.hasMore = res.data.hasMore;
+          renderList();
+          setFoot(state.hasMore ? '' : '— 没有更多了 —');
+        });
+    }
+
+    /* ---------- 触底加载 ---------- */
+    window.addEventListener('scroll', function () {
+      if (!state.firstLoaded || state.loading || state.loadingMore || !state.hasMore) return;
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 96) loadMore();
+    });
+
+    /* ---------- 下拉刷新（触屏：列表在顶部时下拉） ---------- */
+    var ptr = { startY: 0, active: false, armed: false, refreshing: false };
+    var ptrBar = $('ptrBar');
+    document.addEventListener('touchstart', function (e) {
+      if (ptr.refreshing || state.loading) return;
+      if (window.scrollY > 0) return;
+      ptr.startY = e.touches[0].clientY;
+      ptr.active = true;
+      ptr.armed = false;
+    }, { passive: true });
+    document.addEventListener('touchmove', function (e) {
+      if (!ptr.active || ptr.refreshing) return;
+      var dy = e.touches[0].clientY - ptr.startY;
+      if (window.scrollY > 0 || dy <= 0) {
+        ptrBar.style.height = '0px';
+        ptrBar.classList.remove('armed');
+        ptr.armed = false;
+        return;
+      }
+      e.preventDefault(); // 顶部下拉时接管手势
+      var h = Math.min(dy * 0.55, 88);
+      ptrBar.style.height = h + 'px';
+      if (h >= 56) {
+        ptrBar.classList.add('armed');
+        ptr.armed = true;
+        $('ptrText').textContent = '释放刷新';
+      } else {
+        ptrBar.classList.remove('armed');
+        ptr.armed = false;
+        $('ptrText').textContent = '下拉刷新';
+      }
+    }, { passive: false });
+    document.addEventListener('touchend', function () {
+      if (!ptr.active) return;
+      ptr.active = false;
+      if (ptr.armed && !ptr.refreshing) {
+        ptr.refreshing = true;
+        ptrBar.classList.add('refreshing');
+        $('ptrText').textContent = '正在刷新…';
+        $('ptrSpinner').style.display = '';
+        API.fetchOrders({ tab: state.tab, page: 1, pageSize: PAGE_SIZE })
+          .then(function (res) {
+            ptr.refreshing = false;
+            ptrBar.classList.remove('refreshing');
+            ptrBar.style.height = '0px';
+            $('ptrSpinner').style.display = 'none';
+            $('ptrText').textContent = '下拉刷新';
+            if (res.code !== 0) { toast(res.message, true); return; }
+            state.page = 1;
+            state.list = res.data.list;
+            state.total = res.data.total;
+            state.hasMore = res.data.hasMore;
+            state.failed = false;
+            $('pendingBadge').textContent = res.data.counts.pending;
+            renderList();
+            setFoot(state.hasMore ? '' : '— 没有更多了 —');
+            toast('已刷新');
+          });
+      } else {
+        ptrBar.style.height = '0px';
+        ptrBar.classList.remove('armed');
+      }
+    });
+
+    /* ---------- 渲染 ---------- */
+    function setFoot(html) {
+      $('footState').innerHTML = html ? '<div class="list-foot">' + html + '</div>' : '';
+    }
+
+    function renderSkeleton() {
+      var html = '';
+      for (var i = 0; i < 4; i++) {
+        html += '<div class="skeleton-card">'
+          + '<div class="sk-line" style="width:' + (58 + (i % 3) * 9) + '%"></div>'
+          + '<div class="sk-line" style="width:42%;margin-top:12px"></div>'
+          + '<div class="sk-line" style="width:70%;margin-top:10px"></div>'
+          + '</div>';
+      }
+      $('listBox').innerHTML = html;
+    }
+
+    function renderError(msg) {
+      $('listBox').innerHTML =
+        '<div class="empty-state reveal">'
+        + '<div class="empty-icon">' + ICONS.alert + '</div>'
+        + '<h3>加载失败</h3>'
+        + '<p>' + (msg || '网络异常，请检查后重试') + '</p>'
+        + '<button type="button" class="btn-mini" id="retryBtn">' + ICONS.refresh + '重新加载</button>'
+        + '</div>';
+      $('retryBtn').addEventListener('click', function () { reload(true); });
+    }
+
+    function renderEmpty() {
+      var title, desc;
+      if (state.tab === 'pending') {
+        title = '暂无待审核订单';
+        desc = '订单提交后将在此展示，审核通过即开通学员学习权限';
+      } else {
+        title = '暂无订单数据';
+        desc = '全部订单（含审核状态、付款方式与审核结果）将在此展示';
+      }
+      $('listBox').innerHTML =
+        '<div class="empty-state reveal">'
+        + '<div class="empty-icon">' + ICONS.inbox + '</div>'
+        + '<h3>' + title + '</h3>'
+        + '<p>' + desc + '</p>'
+        + '</div>';
+    }
+
+    function renderList() {
+      if (!state.list.length) { renderEmpty(); return; }
+      var html = '';
+      state.list.forEach(function (o, i) {
+        var meta = STATUS_META[o.status];
+        html +=
+          '<a class="org-card reveal" style="animation-delay:' + Math.min(i * 0.04, 0.3) + 's" '
+          + 'href="order-detail.html?id=' + encodeURIComponent(o.id) + '" data-order-card>'
+          + '<div class="oc-top"><span class="oc-name">' + o.klassName + '</span>'
+          + '<span class="status-tag ' + meta.cls + '">' + meta.text + '</span></div>'
+          + '<div class="oc-row">' + ICONS.receipt + '<span class="mono">' + o.id + '</span></div>'
+          + '<div class="oc-row">' + ICONS.users + '<span>班级学员 ' + o.studentCount + ' 人</span></div>'
+          + '<div class="oc-row">' + ICONS.landmark + '<span>' + o.orgName + '</span></div>'
+          + '<div class="oc-bottom"><span class="oc-time">' + ICONS.clock + o.createdAt + '</span>'
+          + '<span class="od-amount">' + DB.formatAmount(o.totalAmount) + '</span>'
+          + '</div></a>';
+      });
+      $('listBox').innerHTML = html;
+      // 进入详情前保存列表状态，返回时还原页签
+      Array.prototype.forEach.call(document.querySelectorAll('[data-order-card]'), function (a) {
+        a.addEventListener('click', saveState);
+      });
+      setFoot(state.hasMore ? '' : '— 没有更多了 —');
+    }
+  })();
+  </script>
+</body>
+</html>
