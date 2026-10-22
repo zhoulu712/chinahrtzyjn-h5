@@ -39,10 +39,10 @@
           <div class="account-sub">如需调整请联系系统管理员在后台配置</div>
         </section>
 
-        <!-- 功能权限：来自后台菜单配置，仅展示 -->
-        <section>
-          <h2 class="section-title">功能权限</h2>
-          <div class="perm-card reveal" id="permCard"></div>
+        <!-- 缺省视图：鼓励语 + 插画（illus-work.svg） -->
+        <section class="cheer-card reveal">
+          <img class="cheer-illus" src="illus-work.svg" alt="认真工作插画">
+          <p class="cheer-title">你的每一份认真与努力都算数，今天也要元气满满，继续加油！</p>
         </section>
       </section>
     </main>
@@ -120,8 +120,7 @@
         'building-2': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>',
         'graduation-cap': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>',
         'siren': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18v-6a5 5 0 1 1 10 0v6"/><path d="M5 21a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2Z"/><path d="M21 12h1"/><path d="M18.5 4.5 18 5"/><path d="M2 12h1"/><path d="M12 2v1"/><path d="M4.929 4.929l.707.707"/><path d="M12 12v6"/></svg>',
-        'monitor-play': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 7.75a.75.75 0 0 1 1.142-.638l3.664 2.249a.75.75 0 0 1 0 1.278l-3.664 2.25a.75.75 0 0 1-1.142-.64z"/><path d="M12 17v4"/><path d="M8 21h8"/><rect x="2" y="3" width="20" height="14" rx="2"/></svg>',
-        'check': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>'
+        'monitor-play': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 7.75a.75.75 0 0 1 1.142-.638l3.664 2.249a.75.75 0 0 1 0 1.278l-3.664 2.25a.75.75 0 0 1-1.142-.64z"/><path d="M12 17v4"/><path d="M8 21h8"/><rect x="2" y="3" width="20" height="14" rx="2"/></svg>'
       };
 
       /* 填充静态图标占位（data-ico） */
@@ -172,19 +171,7 @@
               + '</button>';
           }).join('');
         }
-        renderPerms(perms);
         renderView();
-      }
-
-      /* 功能权限卡：仅展示当前账号已开通的模块 */
-      function renderPerms(perms) {
-        var card = $('permCard');
-        var allowed = DB.modules.filter(function (m) { return perms.indexOf(m.key) !== -1; });
-        card.innerHTML = allowed.length
-          ? allowed.map(function (m) {
-              return '<span class="perm-chip">' + ICONS.check + m.label + '</span>';
-            }).join('')
-          : '<p class="perm-empty">当前账号未配置业务模块权限，仅可查看个人信息与修改登录密码。</p>';
       }
 
       /* 内容区：首页仅个人信息视图，抽屉内高亮当前选中项 */
